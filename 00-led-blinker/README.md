@@ -73,7 +73,9 @@ endmodule
 This was my third iteration. Previous attempts taught me:
 
 **Version 1**: Used counter[35:20] - too slow, pattern barely visible
+
 **Version 2**: Attempted explicit timing with 25M count - overcomplicated, had syntax errors
+
 **Version 3 (Final)**: Elegant solution using single bit as enable, faster update rate
 
 *Kept commented-out versions in source to document learning process.*
