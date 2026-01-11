@@ -311,7 +311,7 @@ To display your own images:
 
 ## License
 
-[Choose: MIT, Apache 2.0, or specify]
+MIT
 
 ---
 
