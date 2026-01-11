@@ -283,12 +283,9 @@ To display your own images:
 
 ## Project Context
 
-This project is part of my transition from Mechanical Engineering to Electrical and Computer Engineering at UT Austin. It represents my first complete FPGA design and demonstrates foundational skills in digital hardware design.
-
 **Learning Goals:**
 - Master FPGA development for high-performance applications
 - Build expertise in hardware acceleration and real-time systems
-- Prepare for career in FPGA development (HFT, semiconductor design, autonomous systems)
 
 **Why This Project:**
 - VGA teaches fundamental timing discipline needed for any real-time hardware
@@ -318,7 +315,7 @@ This project is part of my transition from Mechanical Engineering to Electrical 
 
 ---
 
-**Built by Albert** | Transitioning ME → ECE @ UT Austin
+**Built by Lakshay Yadav** | ECE @ UT Austin
 
 Interested in FPGA development for high-frequency trading, semiconductor design, and hardware acceleration.
 
