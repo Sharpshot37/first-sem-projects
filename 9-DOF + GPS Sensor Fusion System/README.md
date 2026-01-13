@@ -622,7 +622,7 @@ UT Austin, focusing on embedded systems and autonomous navigation.
 - Email: 
 
 **Other Projects:**
-- [VGA Display Controller (FPGA)](../vga-controller)
+- [VGA Display Controller (FPGA)](01-vga-controller)
 - [FPGA Sorting Network](../fpga-sorter)
 - [Portfolio](../)
 
