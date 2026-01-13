@@ -2,7 +2,7 @@
 
 Hardware VGA controller implemented in Verilog on Xilinx Artix-7 FPGA, capable of displaying 640x480@60Hz video with stored image display from block RAM.
 
-![VGA Demo](link-to-your-demo-image-or-video)
+![VGA Demo](https://youtube.com/shorts/ESjALKSlm3E?feature=share)
 
 ## Overview
 
@@ -319,6 +319,6 @@ MIT
 
 Interested in FPGA development for high-frequency trading, semiconductor design, and hardware acceleration.
 
-[LinkedIn](#) | [Portfolio](#) | [Email](#)
+[LinkedIn](https://www.linkedin.com/in/lakshay--yadav/) | [Portfolio](#) | [Email](lakshayyadav003@gmail.com)
 
 *Last Updated: December 2024*
