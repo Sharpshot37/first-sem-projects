@@ -1,41 +1,30 @@
-# 9-DOF Real-Time State Estimation System
-### IMU + GPS Sensor Fusion with Live Data Streaming
+# 9-DOF Real-Time Sensor Fusion System
 
-Real-time sensor fusion system combining 9-axis IMU (MPU9250) and GPS (ATGM336H) 
-for complete orientation and position tracking. Data streams directly to computer 
-via serial for live visualization - optimized for real-time monitoring and analysis.
-
-![Dashboard Demo](demo.gif)
-*Real-time visualization of 9-DOF sensor data streaming at 100Hz*
+Hardware implementation of IMU + GPS sensor fusion on Arduino, streaming orientation and position data at 100Hz for real-time visualization and analysis.
 
 ## Quick Links
-- [Demo Video](#) - Live dashboard in action
-- [Hardware Setup Photos](#) - Wiring and assembly
-- [Python Visualization Code](python/)
+- [Demo Video](https://youtube.com/shorts/ESjALKSlm3E?feature=share) - Dashboard in action
+- [Hardware Photos](#) - Build and wiring
 
 ---
 
 ## Overview
 
-**Problem:** Autonomous systems need accurate real-time state estimation (position 
-+ orientation) from multiple sensors with different update rates.
+Built this to understand how autonomous systems estimate their state (position + orientation) by fusing data from multiple sensors that update at different rates. The IMU runs at 100Hz while GPS updates sporadically at 1-5Hz - keeping everything synchronized while streaming to a computer was the main challenge.
 
-**Solution:** Fuse high-rate IMU data (100Hz) with GPS updates (1-5Hz) and stream 
-to computer for real-time visualization and analysis.
-
-**Architecture Decision:** Direct serial streaming instead of SD logging
-- Enables real-time monitoring and debugging
-- Lower latency for live applications
-- Simpler hardware (no SD card required)
-- Perfect for development and testing
+**Why stream instead of log?** 
+- See what's happening in real-time (critical for debugging sensor issues)
+- No SD card needed (simpler hardware, one less thing to break)
+- Computer can log to CSV if I need historical data
+- Way easier to catch problems during development
 
 ## System Architecture
 ```
 ┌─────────────┐     ┌─────────────┐     ┌──────────────┐
 │  MPU9250    │────▶│             │     │              │
 │  9-DOF IMU  │     │   Arduino   │────▶│  Serial USB  │──┐
-│  100 Hz     │     │   Fusion    │     │   115200     │  │
-└─────────────┘     │   Logic     │     └──────────────┘  │
+│  100 Hz     │     │             │     │   115200     │  │
+└─────────────┘     │             │     └──────────────┘  │
                     │             │                        │
 ┌─────────────┐     │             │                        │
 │  ATGM336H   │────▶│             │                        │
@@ -45,174 +34,107 @@ to computer for real-time visualization and analysis.
                                                            ▼
                                                    ┌──────────────┐
                                                    │   Computer   │
-                                                   │              │
                                                    │   Python     │
                                                    │  Dashboard   │
                                                    └──────────────┘
 ```
 
-**Data Flow:**
-1. Arduino samples IMU at 100Hz, GPS at ~1-5Hz
-2. Sensor fusion algorithms run on Arduino
-3. Formatted data packets stream via serial (115200 baud)
-4. Python receives and visualizes in real-time
-5. Optional: Python can log to CSV for post-processing
+**Data flow:**
+1. Arduino samples IMU every 10ms (100Hz)
+2. GPS updates whenever it feels like it (usually 1-5Hz)
+3. Complementary filter fuses gyro + accel for stable orientation
+4. Everything gets packed into serial packets
+5. Python unpacks and visualizes in real-time
 
 ---
 
 ## Hardware
 
-### Sensors
-
 **MPU9250 - 9-Axis IMU**
-- 3-axis accelerometer (±2g to ±16g range)
-- 3-axis gyroscope (±250 to ±2000 °/s range)
-- 3-axis magnetometer (compass)
+- 3-axis accelerometer, gyroscope, magnetometer
 - I2C interface
-- Sample rate: 100 Hz
+- ~$8 on Amazon
 
 **ATGM336H - GPS Module**
-- Multi-constellation: GPS + GLONASS + Beidou
-- Position accuracy: 2-5m (open sky)
-- Update rate: 1-5 Hz
-- UART interface (NMEA 0183 protocol)
+- GPS + GLONASS + Beidou
+- Position accuracy: 2-5m outdoors
+- UART interface (NMEA protocol)
+- ~$15
 
-### Controller
-- Arduino Uno (ATmega328P @ 16MHz)
-- USB serial connection to computer
+**Arduino Uno**
+- ATmega328P @ 16MHz
+- USB serial for computer connection
+- ~$25 (or use clone)
 
-**Total Hardware Cost:** ~$30
-
----
-
-## Key Features
-
-### ✅ Sensor Fusion
-- Complementary filter for orientation (roll, pitch, yaw)
-- 98/2 gyro/accel weighting for optimal noise rejection
-- Magnetometer integration for absolute heading
-- Tilt-compensated compass heading
-- Multi-rate sensor coordination (100Hz IMU + 1-5Hz GPS)
-
-### ✅ Real-Time Streaming
-- 115200 baud serial communication
-- Formatted data packets with checksums
-- ~100Hz sustained data rate
-- <50ms latency from sensor to display
-- Non-blocking GPS parsing
-
-### ✅ Data Quality Monitoring
-- GPS fix status and satellite count
-- HDOP quality indicator
-- Magnetometer calibration state
-- Sensor health checks
-- Timestamp synchronization
-
-### ✅ Live Visualization
-- Real-time Python dashboard (8 plots)
-- Orientation angles (roll, pitch, yaw)
-- Raw sensor readings (9 axes)
-- GPS position on interactive map
-- Heading comparison (mag vs GPS)
+**Total cost:** ~$30-50 depending on where you buy
 
 ---
 
-## Technical Implementation
+## The Sensor Fusion Part
 
-### Complementary Filter (Core Algorithm)
+### Complementary Filter
 
-The complementary filter fuses accelerometer and gyroscope for stable orientation:
+The core algorithm that fuses gyroscope and accelerometer:
+
 ```cpp
-  float gcompR = roll + gx * dt;
-  float acompR = (atan2(ay,az) * 180) / PI;
-  roll = gcompR * 0.98 + acompR * 0.02;
+// Gyroscope gives rotation rates (deg/s) - integrate to get angles
+float gx_angle = roll + gx * dt;   // Predicted roll from gyro
 
-  float gcompP = pitch + gy * dt;
-  float acompP = (atan2(-ax,sqrt(pow(ay, 2) + pow(az, 2))) * 180) / PI;
-  pitch = gcompP * 0.98 + acompP * 0.02;
+// Accelerometer measures gravity direction - calculate tilt
+float ax_angle = atan2(ay, az) * 180 / PI;
+
+// Combine: trust gyro short-term (fast, smooth), accel long-term (prevents drift)
+roll = 0.98 * gx_angle + 0.02 * ax_angle;
 ```
 
 **Why this works:**
-- Gyroscope: accurate short-term but drifts (integrated noise)
-- Accelerometer: stable long-term but noisy short-term (vibration)
-- 98/2 ratio: trust gyro for responsiveness, use accel to prevent drift
+- Gyroscope: Super responsive but drifts over time (integration error adds up)
+- Accelerometer: Noisy from vibrations but stable average (measures gravity)
+- 98/2 blend: Get gyro's speed without its drift, accel's stability without its noise
 
-**Tuning:** The 98/2 ratio was tested empirically. Higher gyro weight (e.g., 0.99) 
-gives faster response but more drift. Lower (e.g., 0.95) reduces drift but adds lag.
+**Why 98/2 specifically?** Tested a bunch of ratios:
+- 99/1: Too drifty, sensor would slowly rotate by itself
+- 95/5: Too much accel influence, orientation jittered from vibration
+- 98/2: Sweet spot - responsive but stable
 
-### Magnetometer Tilt Compensation
+### Magnetometer Heading
 
-Raw magnetometer readings change with sensor tilt. To get true heading:
+Raw magnetometer readings rotate with the sensor tilt, so I compensate using the roll/pitch from the complementary filter:
+
 ```cpp
-  float cmx = mx - magoffX;
-  float cmy = my - magoffY;
-  float cmz = mz - magoffZ;
-
-  float MX=cmx*cos(acompP)+cmz*sin(acompP);
-  float MY=cmx*sin(acompR)*sin(acompP)+cmy*cos(acompR)-cmz*sin(acompR)*cos(acompP);
-  yaw=atan2(MY,MX);
-  float mhead=yaw*180/PI;
+// Apply tilt compensation matrix
+float MX = mx * cos(pitch) + mz * sin(pitch);
+float MY = mx * sin(roll) * sin(pitch) + my * cos(roll) - mz * sin(roll) * cos(pitch);
+float heading = atan2(MY, MX) * 180 / PI;
 ```
 
-**Why tilt compensation matters:** Without it, tilting the sensor would change the 
-heading reading even if you didn't rotate. This compensates using roll/pitch from 
-the accelerometer/gyro fusion.
+This gives true heading regardless of how the sensor is tilted. Without this, tilting the sensor would change the heading reading even if you didn't rotate.
 
 ### Magnetometer Calibration
 
-Hard iron calibration removes constant magnetic offsets:
+Biggest pain point of the whole project. Every magnetic field near the sensor (USB cable, laptop, desk, motors) creates a constant offset. Solution: rotate the sensor through all orientations and find min/max on each axis:
+
 ```cpp
-void calibMag() {
-  float magXmin = 0;
-  float magXmax = 0;
-  float magYmin = 0;
-  float magYmax = 0;
-  float magZmin = 0;
-  float magZmax = 0;
+// During 10-second calibration
+if (mx > maxX) maxX = mx;
+if (mx < minX) minX = mx;
+// ... same for Y and Z
 
-  unsigned long time = millis();
-
-  Serial.println("Beginning calibration");
-
-  while (millis()-time < 10000) {
-    mpu.update();
-
-    if (mpu.getMagX() > magXmax) {
-      magXmax = mpu.getMagX();
-    } else if (mpu.getMagX() < magXmin) {
-      magXmin = mpu.getMagX();
-    }
-
-    if (mpu.getMagY() > magYmax) {
-      magYmax = mpu.getMagY();
-    } else if (mpu.getMagY() < magYmin) {
-      magYmin = mpu.getMagY();
-    }
-
-    if (mpu.getMagZ() > magZmax) {
-      magZmax = mpu.getMagZ();
-    } else if (mpu.getMagZ() < magZmin) {
-      magZmin = mpu.getMagZ();
-    }
-  }
-  Serial.println("Ending calibration");
-
-  magoffX = (magXmin + magXmax) / 2;
-  magoffY = (magYmin + magYmax) / 2;
-  magoffZ = (magZmin + magZmax) / 2;
-} 
+// Offset is midpoint between min and max
+offsetX = (maxX + minX) / 2;
 ```
 
-**Why calibration is needed:** Nearby ferromagnetic materials (batteries, motors, 
-metal desk) create constant magnetic fields that offset the readings.
+Had to recalibrate every time I moved to a different desk or changed the setup. Learned to just accept this - magnetometers are finicky.
 
-### Serial Communication Protocol
+---
 
-Data packets sent at ~100Hz:
+## Serial Protocol
+
+Data packets stream at 100Hz (every 10ms):
 ```
-Format: Timestamp,lat,lon,alt,sats,hdop,gps_speed,
-        roll,pitch,yaw,heading_mag,heading_gps,
-        ax,ay,az,gx,gy,gz,mx,my,mz,\n
+Format: $,timestamp,lat,lon,alt,sats,hdop,speed,
+        roll,pitch,yaw,mag_heading,gps_heading,
+        ax,ay,az,gx,gy,gz,mx,my,mz,gps_flag,checksum\n
 
 Example:
 $,12345,29.7604,-95.3698,12.3,8,1.2,0.5,
@@ -220,68 +142,31 @@ $,12345,29.7604,-95.3698,12.3,8,1.2,0.5,
   0.02,-0.01,1.00,0.1,-0.2,0.05,23.4,-12.1,45.2,1,C7\n
 ```
 
-**Checksum:** XOR of all bytes for error detection
-**Timing:** Packets sent every 10ms (100Hz) whether GPS has updated or not
-**GPS flag:** Indicates if GPS data is fresh or stale
-
----
-
-## Performance Metrics
-
-### Orientation Estimation
-- **Static accuracy:** ±2° (roll/pitch), ±5° (yaw/heading)
-- **Update rate:** 100 Hz consistent
-- **Latency:** <50ms sensor to display
-- **Gyro drift:** <1°/min after complementary filter
-
-### GPS Performance  
-- **Position accuracy:** 2-5m (open sky, good HDOP <2)
-- **Update rate:** 1-5 Hz (varies by conditions)
-- **Cold start:** ~30s to first fix
-- **Satellite count:** Typically 6-12 (location dependent)
-
-### System Performance
-- **Serial bandwidth:** 115200 baud (~90% utilized at 100Hz)
-- **Packet loss:** <0.1% under normal conditions
-- **CPU usage:** ~65% (Arduino Uno @ 16MHz)
-- **Sustained operation:** Tested for 2+ hours continuously
+Checksum is XOR of all bytes - catches corrupted packets. GPS flag indicates if GPS data is fresh (just updated) or stale (using last known position).
 
 ---
 
 ## Test Results
 
-### Field Test: Walking Figure-8 Pattern
+### Walking Figure-8 Test
 
-**Setup:** 
-- Outdoor test with clear sky view
-- Walking in 50m diameter figure-8
-- Total path length: ~150m
-- Duration: 3 minutes
+Walked a ~50m diameter figure-8 pattern outdoors. GPS tracked the path accurately (you can see it on the map visualization), orientation stayed stable throughout. Position accuracy was around 3m average - good enough to see the path shape clearly.
 
-**Results:**
-- GPS track captured accurately (see map visualization)
-- Position accuracy: ~3m average error
-- Heading tracked turns smoothly
-- Magnetometer heading matched GPS heading when moving
-- No data loss during test
-- Orientation stable throughout
+### Orientation Accuracy
 
-### Orientation Accuracy Test
-
-Tested against physical level and protractor:
+Tested against a physical level and protractor:
 
 | True Angle | Measured | Error |
 |------------|----------|-------|
 | 0° (level) | 0.3°     | 0.3°  |
 | 45° tilt   | 46.8°    | 1.8°  |
 | 90° tilt   | 92.1°    | 2.1°  |
-| -30° tilt  | -28.7°   | 1.3°  |
 
-**Dynamic test:** Rapid tilting showed no oscillation or instability
+Rapid tilting showed no oscillation - the 98/2 filter ratio keeps it stable.
 
-### Magnetometer Heading Test
+### Magnetometer Heading
 
-Compared to smartphone compass:
+Compared to smartphone compass (both devices in same orientation):
 
 | Smartphone | This System | Error |
 |------------|-------------|-------|
@@ -290,188 +175,119 @@ Compared to smartphone compass:
 | 180° (South)| 183°       | 3°    |
 | 270° (West) | 274°       | 4°    |
 
-**Note:** Accuracy limited by local magnetic interference and calibration quality
+Good enough for navigation, but the ±5° error shows how much local magnetic interference matters.
 
 ---
 
-## Technical Challenges & Solutions
+## Technical Challenges
 
-### Challenge 1: Timing Coordination
-**Problem:** IMU needs 100Hz sampling, GPS updates irregularly (1-5Hz). Can't block.
+### Challenge 1: Keeping 100Hz Timing with Non-Blocking GPS
 
-**Solution:** 
-- Non-blocking GPS parsing (check for new data without waiting)
-- Timer-based IMU sampling (every 10ms exactly)
-- GPS data marked with "age" to indicate freshness
+**The problem:** IMU needs to sample every 10ms exactly. GPS updates randomly (sometimes 200ms, sometimes 1000ms). Can't wait for GPS or IMU timing gets messed up.
 
-**Result:** Consistent 100Hz IMU rate regardless of GPS behavior
+**Solution:** Check for GPS data without blocking:
+```cpp
+while (gpsSerial.available()) {
+  gps.encode(gpsSerial.read());  // Parse whatever's there
+}
+// Don't wait, just continue to IMU sampling
+```
+
+GPS data gets marked with a "fresh" flag when it updates. Python dashboard shows the age of GPS data so you know if it's current or stale.
+
+**Result:** IMU maintained solid 100Hz regardless of GPS behavior.
 
 ### Challenge 2: Serial Bandwidth
-**Problem:** Sending 20+ values at 100Hz = massive data rate
 
-**Solution:**
-- Compact comma-separated format (not JSON/XML overhead)
-- Binary data considered but rejected (harder to debug)
-- Checksum for error detection
-- Tuned to stay under 115200 baud limit
+Sending 20+ values at 100Hz = massive data rate. At 115200 baud, each packet can be ~80 bytes max.
 
-**Result:** Sustained 100Hz with <0.1% packet loss
+Considered binary encoding (would be ~40 bytes/packet) but rejected it because:
+- Way harder to debug (can't just look at Serial Monitor)
+- Python parsing gets more complex
+- Comma-separated is fast enough if I'm careful
 
-### Challenge 3: Magnetometer Interference
-**Problem:** Magnetometer affected by USB cable, laptop, metal desk
+Optimized by:
+- Keeping precision reasonable (2-3 decimal places)
+- No JSON/XML overhead
+- Compact field names
 
-**Solution:**
-- Careful calibration procedure (rotate away from interference sources)
-- Mount sensor away from Arduino board and wiring
-- User calibration before each session
-- Visual feedback during calibration
+**Result:** ~90% bandwidth utilization at 100Hz with <0.1% packet loss.
 
-**Result:** ±5° heading accuracy after proper calibration
+### Challenge 3: Magnetometer is a Drama Queen
 
-### Challenge 4: GPS Cold Start
-**Problem:** GPS takes 30+ seconds for first fix after power-on
+First attempt: mounted sensor right next to Arduino → readings were garbage. USB cable created huge magnetic field that swamped the sensor.
 
-**Solution:**
-- System starts immediately with IMU data
-- GPS marked as "invalid" until fix acquired
-- Dashboard shows GPS status clearly
-- Graceful degradation (orientation works without GPS)
+Learned the hard way:
+- Keep magnetometer away from Arduino board
+- Calibrate with sensor in final position (moving it invalidates calibration)
+- USB cable position matters
+- Metal desk vs wooden table makes a difference
+- Recalibrate before each session or accept bad heading
 
-**Result:** User sees immediate feedback, GPS adds position when ready
+Final setup: sensor mounted on a stick ~20cm from Arduino. Still not perfect but workable.
+
+### Challenge 4: GPS Cold Start Waiting
+
+GPS takes 30-60 seconds to get first fix after power-on. Originally had the code wait, but that meant nothing worked for the first minute.
+
+Fixed: System starts immediately with IMU data, GPS marked invalid until it locks. Dashboard shows "GPS: No Fix" clearly. Once satellites lock, position data appears. Way better user experience.
 
 ---
 
-## Why This Architecture?
+## What I Actually Learned
 
-### Real-Time Streaming vs SD Card Logging
+**Sensor fusion isn't magic** - it's just combining slow-but-accurate data with fast-but-drifty data. The complementary filter is surprisingly simple but works well. More complex algorithms like Kalman filters exist but this was good enough for understanding the fundamentals.
 
-**I chose serial streaming because:**
+**Real-time constraints are hard** - When you promise 100Hz, you deliver 100Hz every single time or things break. No "mostly 100Hz" or "average 100Hz." Every. Single. Time. This mindset is critical for any real-time system.
 
-✅ **Live monitoring:** See data immediately, catch problems fast
-✅ **Easier debugging:** Real-time visualization shows issues as they happen  
-✅ **Simpler hardware:** No SD card module needed (cost/complexity)
-✅ **Flexible logging:** Python can log to CSV if needed
-✅ **Lower latency:** No SD write delays (~10-50ms per write)
+**Magnetometers are annoying** - They work great in theory (measure Earth's magnetic field for absolute heading), terrible in practice (everything creates magnetic fields). Learned to work around this instead of fighting it.
 
-**Tradeoffs:**
-❌ **Requires computer connection:** Can't operate standalone
-❌ **USB cable length limited:** ~5m practical maximum
-❌ **Packet loss possible:** If computer lags (rare with good code)
+**Serial debugging is your friend** - Being able to see raw sensor values streaming in real-time caught so many bugs. Watched orientation values while tilting the sensor to verify the math was right.
 
-**For autonomous deployment (drone/robot), I would add:**
-- SD card for onboard logging
-- Wireless serial (Bluetooth/WiFi)
-- Onboard processing (no computer required)
+**GPS accuracy is... variable** - 2-5m accuracy sounds good until you realize that's the radius of a circle you're somewhere inside. Good enough for walking paths, not good enough for precise positioning. Also learned about HDOP (dilution of precision) - lower is better, and satellite geometry matters as much as satellite count.
 
-**For development/testing (this project), streaming is optimal.**
+**Embedded development is different** - 2KB of RAM means you think hard about every variable. No malloc, careful with arrays, reuse buffers. Coming from writing Python where you just throw memory at problems, this was a mindset shift.
 
 ---
 
 ## Applications
 
-### Autonomous Drones (Texas Aerial Robotics)
-- **Sensor fusion pipeline:** Same 9-DOF fusion used in flight controllers
-- **State estimation:** Foundation for navigation and control
-- **Magnetometer heading:** Critical for waypoint navigation while hovering
-- **Real-time monitoring:** Similar to ground station telemetry
+**Drones:**
+Same 9-DOF fusion used in flight controllers - this project gave me hands-on experience with the sensor pipeline, preparing me to deal with flight dynamics.
 
-### Vehicular Implementation
-- **Vehicle dynamics:** IMU tracks chassis orientation and acceleration
-- **Telemetry systems:** Real-time data streaming to pit crew
-- **GPS lap timing:** Position + speed monitoring
-- **Sensor validation:** Live dashboard for testing and calibration
+**Vehicle Telemetry:**
+Vehicles stream telemetry to pit crew during testing. Similar architecture - sensors on car, real-time wireless link, dashboard on laptop. This project proved I can build that pipeline.
 
-### General Robotics
-- Mobile robot localization and mapping
-- Balance control systems (complementary filter for tilt)
-- Autonomous navigation
-- Human motion tracking
+**General Robotics:**
+Any mobile robot needs to know where it is and which way it's pointing. This is the foundation - add encoders and you get dead reckoning, add cameras and you get SLAM.
 
 ---
 
-## What I Learned
+## Future Work
 
-### Sensor Fusion Algorithms
-- How complementary filters balance noise vs drift
-- Tuning filter coefficients empirically
-- Coordinate frame transformations (body frame → earth frame)
-- Multi-rate sensor integration strategies
+**Near-term:**
+- [ ] Add SD card for standalone logging (so it's not tethered to laptop)
+- [ ] Kalman filter instead of complementary filter
+- [ ] Bluetooth serial (cut the USB cable)
+- [ ] Better gyro bias estimation
 
-### Embedded Systems
-- Real-time constraints and precise timing
-- Non-blocking I/O for multiple peripherals
-- Serial communication protocol design
-- Memory management on constrained hardware (2KB RAM)
-
-### IMU Technology
-- Why gyroscopes drift and how to compensate
-- Accelerometer noise sources (vibration, linear acceleration)
-- Magnetometer calibration and interference
-- Sensor specifications and their practical limitations
-
-### GPS Technology
-- NMEA protocol parsing
-- Fix quality indicators (satellites, HDOP, DOP)
-- GPS accuracy factors (ionosphere, multipath, satellite geometry)
-- Cold start vs hot start behavior
-
-### System Integration
-- Balancing real-time performance with code clarity
-- Error handling without crashing (embedded mindset)
-- Data visualization for debugging
-- Testing and validation methodology
-
----
-
-## Future Enhancements
-
-### Near-Term (Next Iteration)
-- [ ] Extended Kalman Filter for optimal sensor fusion
-- [ ] Add SD card logging for autonomous operation
-- [ ] Gyroscope bias estimation and correction
-- [ ] Soft iron magnetometer calibration (ellipsoid fitting)
-- [ ] Wireless serial (Bluetooth module)
-
-### Medium-Term
-- [ ] Sensor fusion on higher-performance processor (STM32, ESP32)
-- [ ] Real-time trajectory prediction
-- [ ] Anomaly detection (sensor failures, GPS spoofing)
-- [ ] Multiple GPS antennas for heading (dual-antenna setup)
-
-### Advanced (Full Autonomy Stack)
-- [ ] Computer vision integration for SLAM
-- [ ] Obstacle avoidance and path planning
-- [ ] Waypoint navigation implementation
-- [ ] Complete autopilot system
+**If I rebuild this:**
+- Use ESP32 (faster, built-in Bluetooth, more memory)
+- Add barometer for altitude fusion
+- Dual GPS antennas for heading (no magnetometer headaches)
+- More sophisticated outlier rejection
 
 ---
 
 ## Code Structure
 ```
 ├── arduino/
-│   ├── sensor_fusion.ino      # Main Arduino code
-│   ├── imu.h                   # MPU9250 interface
-│   ├── gps.h                   # ATGM336H interface
-│   ├── fusion.h                # Complementary filter algorithms
-│   ├── calibration.h           # Magnetometer calibration
-│   └── config.h                # System parameters and pin definitions
+│   └── sensor_fusion.ino      # Main code (all in one file for simplicity)
 │
 ├── python/
-│   ├── realtime_dashboard.py  # Live visualization (8 subplots)
-│   ├── gps_map.py              # GPS track on interactive map
-│   ├── data_logger.py          # Save serial data to CSV
-│   └── requirements.txt        # Python dependencies
-│
-├── docs/
-│   ├── hardware_setup.md       # Wiring diagrams
-│   ├── calibration.md          # Sensor calibration procedure
-│   ├── serial_protocol.md      # Data packet format
-│   └── images/                 # Photos, screenshots, diagrams
-│
-├── demo/
-│   ├── demo_video.mp4          # Dashboard in action
-│   ├── gps_track_map.html      # Example GPS visualization
-│   └── screenshots/            # Dashboard screenshots
+│   ├── realtime_dashboard.py  # Live 8-plot visualization
+│   ├── gps_map.py              # GPS track on folium map
+│   └── data_logger.py          # Save serial to CSV
 │
 └── README.md
 ```
@@ -480,155 +296,94 @@ Compared to smartphone compass:
 
 ## Getting Started
 
-### Hardware Setup
-
-**Wiring:**
+### Wiring
 ```
 MPU9250 → Arduino:
-  VCC → 5V
-  GND → GND
-  SDA → 20 (I2C data)
-  SCL → 21 (I2C clock)
+  VCC → 5V, GND → GND
+  SDA → A4, SCL → A5
 
 ATGM336H → Arduino:
-  VCC → 5V
-  GND → GND
-  TX → Pin 18 (software serial RX)
-  RX → Pin 19 (software serial TX)
+  VCC → 5V, GND → GND
+  TX → Pin 10, RX → Pin 11
 ```
 
-**Mounting:**
-- Secure IMU to rigid surface (minimize vibration)
-- Position GPS antenna with clear sky view
-- Keep magnetometer away from motors, batteries, metal
-
-### Software Setup
-
-**Arduino:**
+### Arduino Setup
 ```bash
 1. Install Arduino IDE
-2. Install libraries via Library Manager:
-   - MPU9250 (by hideakitai)
-   - TinyGPSPlus
-3. Open arduino/sensor_fusion.ino
-4. Upload to Arduino Uno
-5. Open Serial Monitor (115200 baud) to verify data stream
+2. Install libraries: MPU9250, TinyGPSPlus
+3. Upload sensor_fusion.ino
+4. Open Serial Monitor (115200 baud) - should see data streaming
 ```
 
-**Python:**
+### Python Setup
 ```bash
-# Install dependencies
 pip install pyserial matplotlib folium pandas numpy
-
-# Run real-time dashboard
-python python/realtime_dashboard.py
-
-# Optional: Log data to CSV
-python python/data_logger.py output.csv
+python realtime_dashboard.py
 ```
 
-### Calibration Procedure
-
-**1. Magnetometer Calibration (10 seconds):**
-- Upload code with calibration mode enabled
-- Hold sensor away from metal/magnets
-- Slowly rotate in complete figure-8 pattern
-- Tilt sensor to all orientations
-- Offsets automatically calculated and saved
-
-**2. Wait for GPS Fix:**
-- Go outdoors with clear sky view
-- Wait for GPS LED indicator (or serial message)
-- Typically 30-60 seconds from power-on
-- Verify satellite count >4
-
-**3. Ready to Use:**
-- Start Python dashboard
-- Verify all sensors showing data
-- System fully operational
+### Calibration
+1. Upload code, wait for "Begin calibration" message
+2. Slowly rotate sensor in figure-8 pattern through all orientations
+3. After 10 seconds, offsets are calculated
+4. Go outdoors, wait for GPS fix (watch for satellite count >4)
+5. Ready to use
 
 ---
 
-## Performance Notes
+## Common Issues
 
-**Best Results When:**
-- ✅ GPS has clear sky view (outdoors, away from buildings/trees)
-- ✅ IMU firmly mounted (reduces vibration noise)
-- ✅ Magnetometer calibrated before each session
-- ✅ Magnetometer away from magnetic interference
-- ✅ USB cable secured (prevents disconnection)
+**Magnetometer jumps around:** Recalibrate away from metal/electronics
 
-**Common Issues:**
-- ❌ Magnetometer reading jumps → recalibrate away from metal
-- ❌ GPS not acquiring fix → move outdoors, wait longer
-- ❌ Orientation drifts → check complementary filter ratio
-- ❌ Serial data choppy → reduce baud rate or data frequency
+**GPS won't lock:** Go outside, wait longer (cold start can take 60+ seconds)
+
+**Orientation drifts slowly:** Adjust complementary filter ratio (try 0.97/0.03)
+
+**Serial data choppy:** Reduce update rate or check USB cable connection
 
 ---
 
-## Libraries & Resources
-
-### Libraries Used
+## Libraries Used
 
 **Arduino:**
-- **MPU9250** (hideakitai) - IMU communication via I2C
-- **TinyGPSPlus** (Mikal Hart) - GPS NMEA parsing
-- **SoftwareSerial** (Arduino built-in) - GPS UART communication
+- MPU9250 by hideakitai
+- TinyGPSPlus by Mikal Hart
+- SoftwareSerial (built-in)
 
 **Python:**
-- **pyserial** - Serial communication
-- **matplotlib** - Real-time plotting
-- **folium** - Interactive GPS maps
-- **pandas** - Data logging and analysis
-
-### Learning Resources
-
-**Sensor Fusion:**
-- "Fundamentals of Sensor Fusion" - Sebastian Madgwick
-- Complementary Filter Tutorial - Pieter-Jan Van de Maele
-- "Probabilistic Robotics" - Thrun, Burgard, Fox
-
-**IMU/GPS:**
-- MPU9250 datasheet and register map
-- NMEA 0183 protocol specification
-- GPS accuracy and error sources
-
-**Implementation:**
-- Arduino MPU9250 library documentation
-- TinyGPS++ examples and API reference
-- Real-time embedded systems principles
+- pyserial, matplotlib, folium, pandas
 
 ---
 
 ## Project Context
 
-Built as part of my transition from Mechanical to Electrical Engineering at 
-UT Austin, focusing on embedded systems and autonomous navigation.
+Built during my first semester at UT Austin. Wanted hands-on experience with sensors and real-time systems before diving into advanced projects.
 
-**This project demonstrates:**
-- Multi-sensor fusion algorithms
-- Real-time embedded programming
-- Hardware-software integration
-- System testing and validation
-- Understanding of real-time state estimation
+This demonstrates I can:
+- Integrate multiple sensors with different interfaces and update rates
+- Implement real-time algorithms with hard timing constraints
+- Design communication protocols for streaming data
+- Build complete hardware-software systems
+- Debug sensor issues systematically
 
 ---
 
-## Contact & Links
+## Resources
 
-**Lakshay Yadav**
-- GitHub: 
-- LinkedIn:   
-- Email: 
+**Sensor Fusion:**
+- "Fundamentals of Sensor Fusion" - Sebastian Madgwick
+- Complementary Filter Tutorial - Pieter-Jan Van de Maele
+- "Probabilistic Robotics" - Thrun, Burgard, Fox
+- Pieter-Jan Van de Maele's complementary filter tutorial
+- "Keeping a Good Attitude" by William Premerlani (DCM algorithm)
 
-**Other Projects:**
-- [VGA Display Controller (FPGA)](01-vga-controller)
-- [FPGA Sorting Network](../fpga-sorter)
-- [Portfolio](../)
+**IMU/GPS:**
+- MPU9250 datasheet and register map
+- NMEA 0183 protocol spec
+- TinyGPS++ documentation
+- Real-time embedded systems principles
 
 ---
 
 **Built December 2024 | Arduino + Python | 9-DOF Sensor Fusion**
 
-
-```
+**Next:** Porting to STM32 for higher performance + wireless telemetry
