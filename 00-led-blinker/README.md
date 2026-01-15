@@ -4,7 +4,7 @@ My first working FPGA design on the Basys 3 board. A simple yet effective introd
 
 ## Demo
 
-https://youtube.com/shorts/3799ZVqMtzU?feature=share
+[Led Blinker](https://youtube.com/shorts/3799ZVqMtzU?feature=share)
 
 ## What It Does
 
