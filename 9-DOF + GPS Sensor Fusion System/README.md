@@ -3,8 +3,8 @@
 Hardware implementation of IMU + GPS sensor fusion on Arduino, streaming orientation and position data at 100Hz for real-time visualization and analysis.
 
 ## Quick Links
-- [Demo Video](https://youtube.com/shorts/ESjALKSlm3E?feature=share) - Dashboard in action
-- [Hardware Photos](#) - Build and wiring
+- [Demo Video](https://youtube.com/shorts/lhxERcgtU0A?feature=share) - Dashboard in action
+- [Hardware Photos](https://drive.google.com/file/d/1cbT3uiKRwMIP1I9MayDR_OYPFMwVgQx0/view?usp=sharing) - Build and wiring
 
 ---
 
