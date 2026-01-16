@@ -24,7 +24,7 @@ Building high-performance systems at the intersection of hardware, embedded soft
 ## Featured Projects
 
 ### 1. FPGA Bitonic Sorting Network
-**[View Project →](./bitonic-sorter)**
+**[View Project →](./03-sort-network)**
 
 8-element hardware sorting network on Basys 3 FPGA demonstrating parallel comparison architecture for deterministic, low-latency sorting.
 
@@ -49,7 +49,7 @@ Building high-performance systems at the intersection of hardware, embedded soft
 ---
 
 ### 2. 9-DOF Real-Time Sensor Fusion System
-**[View Project →](./9dof-sensor-fusion)**
+**[View Project →](<./9-DOF + GPS Sensor Fusion System>)**
 
 IMU + GPS fusion on Arduino, streaming orientation and position data at 100Hz for real-time visualization and analysis.
 
@@ -76,7 +76,7 @@ IMU + GPS fusion on Arduino, streaming orientation and position data at 100Hz fo
 ---
 
 ### 3. VGA Image Display Controller
-**[View Project →](./vga-controller)**
+**[View Project →](./01-vga-controller)**
 
 Hardware VGA controller generating 640x480@60Hz video with image display from FPGA block RAM.
 
@@ -103,7 +103,7 @@ Hardware VGA controller generating 640x480@60Hz video with image display from FP
 ---
 
 ### 4. LED Blinker - First FPGA Project
-**[View Project →](./led-blinker)**
+**[View Project →](./00-led-blinker)**
 
 My first working FPGA design - pulsing LED pattern demonstrating core HDL concepts.
 
