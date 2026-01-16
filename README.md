@@ -153,6 +153,7 @@ My first working FPGA design - pulsing LED pattern demonstrating core HDL concep
 2. VGA Controller → Mastered timing constraints, memory interfacing
 
 **Phase 2: Real-Time Systems**
+
 3. 9-DOF Sensor Fusion → Multi-sensor integration, real-time constraints
 4. Bitonic Sorter → Hardware acceleration, parallel algorithms
 
@@ -170,7 +171,7 @@ My first working FPGA design - pulsing LED pattern demonstrating core HDL concep
 - **Real-Time Systems:** Experience with deterministic latency and precise timing
 - **FPGA Development:** Foundation for network packet processing and market data parsing
 
-### For Autonomous Systems
+### For Embedded Systems
 - **Sensor Fusion:** Core navigation pipeline for drones and vehicles
 - **Real-Time Constraints:** Meeting hard deadlines in safety-critical systems
 - **Hardware/Software Integration:** Building complete embedded systems from scratch
