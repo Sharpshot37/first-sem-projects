@@ -2,9 +2,9 @@
 
 **Lakshay Yadav | Electrical & Computer Engineering @ UT Austin**
 
-Building high-performance systems at the intersection of hardware, embedded software, and real-time computing. Focused on FPGA development, sensor fusion, and low-latency applications for autonomous systems and quantitative trading.
+Building high-performance systems at the intersection of hardware, embedded software, and real-time computing. Focused on FPGA development, sensor fusion, and low-latency applications for autonomous systems.
 
-[LinkedIn](#) | [GitHub](#) | lakshayyadav003@gmail.com
+[LinkedIn](https://linkedin.com/in/lakshay--yadav/) | [GitHub](github.com/lakshayyadav) | lakshayyadav003@gmail.com
 
 ---
 
@@ -16,7 +16,6 @@ Building high-performance systems at the intersection of hardware, embedded soft
 - FPGA development for hardware acceleration
 - Real-time embedded systems
 - Sensor fusion and state estimation
-- High-frequency trading infrastructure
 
 **Previous:** Furnace Improvement Services (refinery operations, CAD modeling, CNC machining), Abraham Professional Services TMT division
 
@@ -45,7 +44,7 @@ Building high-performance systems at the intersection of hardware, embedded soft
 
 **Tech:** Verilog HDL, Xilinx Vivado, Basys 3 (Artix-7), Hardware acceleration concepts
 
-**Relevance:** Direct application to orderbook management in high-frequency trading - demonstrates understanding of parallel hardware for latency-critical sorting.
+**Relevance:** Direct application to orderbook management - demonstrates understanding of parallel hardware for latency-critical sorting.
 
 ---
 
@@ -72,7 +71,7 @@ IMU + GPS fusion on Arduino, streaming orientation and position data at 100Hz fo
 
 **Tech:** Arduino (ATmega328P), MPU9250 IMU, ATGM336H GPS, Python (matplotlib, folium), Serial communication
 
-**Relevance:** Foundation for autonomous systems (drones, vehicles) - same sensor pipeline used in flight controllers and navigation systems for IEEE RAS and Longhorn Racing projects.
+**Relevance:** Foundation for autonomous/electric systems (drones, vehicles) - same sensor pipeline used in flight controllers and navigation systems for advanced projects.
 
 ---
 
@@ -115,8 +114,6 @@ My first working FPGA design - pulsing LED pattern demonstrating core HDL concep
 - Foundation concepts: synchronous logic, clock domains, reset handling
 
 **Tech:** Verilog HDL, Basys 3 FPGA
-
-**Why Include This:** Shows learning progression and willingness to document the journey, not just polished final products.
 
 ---
 
@@ -201,14 +198,8 @@ My first working FPGA design - pulsing LED pattern demonstrating core HDL concep
 
 **Spring 2025:**
 - Advanced digital design coursework at UT Austin
-- VexU robotics (controls and sensor integration)
-- Building wireless telemetry system for Formula SAE
-
-**Summer 2025:** Seeking internship in:
-- FPGA development / hardware acceleration
-- Embedded systems for autonomous vehicles
-- High-frequency trading infrastructure
-- Semiconductor design / verification
+- Controls and sensor integration
+- Building wireless telemetry system
 
 ---
 
